@@ -1,0 +1,53 @@
+param (
+    [string] $startFolder = $PSScriptRoot,
+    [string] $archiveName = "archive.zip",
+    [string] $targetFileName = "*.php"
+)
+
+# Path to the log file
+$logFilePath = "log.txt"
+
+# Function for logging messages
+function Write-Log($message) {
+    $timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    $logMessage = "[$timestamp] $message"
+    $logMessage | Out-File -Append -FilePath $logFilePath
+    Write-Host $logMessage
+}
+
+Write-Log "Script started."
+
+# Path to 7-Zip executable
+$7zipPath = "C:\Program Files\7-Zip\7z.exe"
+
+# Create a new archive
+if (Test-Path $7zipPath) {
+    Write-Log "7-Zip found at $7zipPath"
+    Write-Log "Creating archive $archiveName"
+
+    # Function for recursively traversing folders and adding files to the archive
+    function RecursivelyAddFiles($folder, $relativePath = "") {
+        $items = Get-ChildItem -Path $folder
+
+        foreach ($item in $items) {
+            if ($item.PSIsContainer) {
+                # If it's a folder, recursively call RecursivelyAddFiles
+                $newRelativePath = $relativePath + $item.Name
+                RecursivelyAddFiles $item.FullName $newRelativePath
+            } elseif ($item.Name -like $targetFileName) {
+                $itemRelativePath = $item.FullName.Remove(0, $startFolder.Length + 1)
+                # If it's a file with the specified name, add it to the archive with the relative folder structure
+                Write-Log "Added file to the archive: $($itemRelativePath)"
+                & $7zipPath a $archiveName $itemRelativePath -spf
+            }
+        }
+    }
+
+    # Start traversing folders and adding files to the archive
+    Write-Log "Start traversing folders and adding files to the archive."
+    RecursivelyAddFiles $startFolder
+    Write-Log "Script finished."
+} else {
+    Write-Log "Error: 7-Zip not found at $7zipPath"
+    Write-Log "Script terminated."
+}
