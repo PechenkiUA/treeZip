@@ -1,4 +1,4 @@
-# treeZip
+# TreeZip Search
 
 The script recursively collects files in folders by file name or part of them, preserving the structure and zipping everything into one zip archive
 
